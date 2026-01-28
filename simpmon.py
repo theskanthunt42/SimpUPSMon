@@ -12,9 +12,9 @@ ListeningPort = 8101 # Port you wanna to use
 HTMLPath = "dash.html" # Whatever HTML you want to use, be aware of those variables
 
 # Initialize payloads
-VisitCount = 0
 assets = {"voltage": 0.0000, "capacity": 0.0000, "temp": "",
            "time": "", "uptime": "", "upsince": "", "header": "", "load": ""}
+
 # HTMLPayloads = """
 # """ # Dummy for now
 
@@ -30,9 +30,10 @@ def HTMLRead() -> str:
         raise SystemExit
     return HTMLData
 
-def VisitorsOfTheRun():
-    # WIP
-    return None    
+#def VisitorsOfTheRun(ProDict, LastRay, VisCount):
+#    if ProDict["CfRayID"] is not LastRay:
+#        VisitCount = VisCount + 1
+#    return VisitCount
 
 def I2CRead(bus, i2caddr, addr) -> int:
     try:
@@ -63,7 +64,7 @@ def SimpHTTPServerSetup():
     return s
 
 def SimpHeaderRead(Data: bytes) -> dict:
-    ProDict = {"Origin": "", "CfIP": "", "CfCountry": ""}
+    ProDict = {"Origin": "", "CfIP": "", "CfCountry": "", "CfRayID": "", "UA": ""}
     DecodedData = Data.decode()
     for key in DecodedData.split("\r\n"):
         RawList = key.split("\r\n")
@@ -77,15 +78,24 @@ def SimpHeaderRead(Data: bytes) -> dict:
                     ProDict["CfIP"] = Value
                 case "Cf-Ipcountry":
                     ProDict["CfCountry"] = Value
+                case "Cf-Ray":
+                    ProDict["CfRayID"] = Value
+                case "User-Agent":
+                    ProDict["UA"] = Value
         else:
             pass
     return ProDict
 
-def SimpHTTPSend(client, address, assets):
+def SimpHTTPSend(client, address, assets, VisitCount, LastUA, IPLast):
     IncomingData = client.recv(1024)
     #print(f"Incoming connection from: {address}")
     #print(f"With header of {IncomingData}")# For debug and for fun, seems to be causing trouble
     ProDict = SimpHeaderRead(IncomingData)
+    #visitors = VisitorsOfTheRun(ProDict, CfRayLast, VisitCount)
+    if ProDict["UA"] != LastUA and ProDict["Origin"] != IPLast and ProDict["Origin"] != "":
+        VisitCount = VisitCount + 1
+        print("Unique.")
+        print(f"{ProDict['Origin']} comp {IPLast}")
     #RealIP = IncomingString.split("\r\n")[-5].split(": ")[1]
     #CfIP = IncomingString.split("\r\n")[8].split(": ")[1]
     #CfCountry = IncomingString.split("\r\n")[9].split(": ")[1]
@@ -95,12 +105,14 @@ def SimpHTTPSend(client, address, assets):
     Response = Response.format(
         LoadAvg = assets["load"], RealAddr = ProDict["Origin"], CfCDNIP = ProDict["CfIP"], CfCDNLOC = ProDict["CfCountry"], 
         addr = address[0], port = address[1], volt = assets["voltage"], percent = assets["capacity"], temps = assets["temp"], 
-        timenow = assets["time"], uptime = assets["uptime"], upsince = assets["upsince"], header = IncomingData.decode()
+        timenow = assets["time"], uptime = assets["uptime"], upsince = assets["upsince"], header = IncomingData.decode(), visit = VisitCount
     )
     client.send(b"HTTP/1.0 200 OK\r\nContent-Type: text/html\r\n\r\n")
     client.sendall(bytes(Response.encode("utf-8")))
+    IPLast = ProDict["Origin"]
     #client.sendall(b"<html>Hello.</html>")
     #print("Data sent.")
+    return VisitCount, LastUA, IPLast
     
 
 def VCTempRead() -> str:
@@ -118,6 +130,9 @@ def TimeRelated() -> tuple[str, str, str, str]:
 
 def main():
     bus = smbus.SMBus(I2CBus)
+    VisitCount = 1
+    LastUA = ""
+    IPLast = ""
     try:
         s = socket.socket()
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -132,7 +147,7 @@ def main():
             assets["capacity"] = BatteryPackCapacity(bus)
             assets["temp"] = VCTempRead()
             assets["upsince"], assets["uptime"], assets["time"], assets["load"] = TimeRelated()
-            SimpHTTPSend(client, address, assets)
+            VisitCount, LastUA, IPLast = SimpHTTPSend(client, address, assets, VisitCount, LastUA, IPLast)
             client.close()
         except OSError as error:
             client.close()
