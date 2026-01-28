@@ -1,4 +1,4 @@
-import smbus
+import smbus # pyright: ignore[reportMissingImports]
 import struct
 import socket
 import os
@@ -130,6 +130,13 @@ def TimeRelated() -> tuple[str, str, str, str]:
     LocalTime = f"{LocalTimeTup[0]} {LocalTimeTup[1]}, {LocalTimeTup[2]} {LocalTimeTup[5]} {LocalTimeTup[3]} (UTC{LocalTimeTup[4]})"
     return UPTimeSince, UPTimeFor, LocalTime, LoadAverage
 
+def HardReadingOperations(bus) -> dict:
+    assets["voltage"] = BatteryPackVoltage(bus)
+    assets["capacity"] = BatteryPackCapacity(bus)
+    assets["temp"] = VCTempRead()
+    assets["upsince"], assets["uptime"], assets["time"], assets["load"] = TimeRelated()
+    return assets
+
 
 def main():
     bus = smbus.SMBus(I2CBus)
@@ -146,19 +153,16 @@ def main():
         try:
             s.listen(4)
             client, address = s.accept()
-            assets["voltage"] = BatteryPackVoltage(bus)
-            assets["capacity"] = BatteryPackCapacity(bus)
-            assets["temp"] = VCTempRead()
-            assets["upsince"], assets["uptime"], assets["time"], assets["load"] = TimeRelated()
+            assets = HardReadingOperations(bus)
             VisitCount, LastUA, IPLast = SimpHTTPSend(client, address, assets, VisitCount, LastUA, IPLast)
             client.close()
         except OSError as error:
             client.close()
-            break
+            raise error
         except KeyboardInterrupt:
             client.close()
             print("Interrupt by user.")
-            break
+            raise KeyboardInterrupt
 
 
 
