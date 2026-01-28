@@ -3,66 +3,32 @@ import struct
 import socket
 import os
 
-I2CBus = 1
-I2CAddress = 0x36 
-ListeningAddress = "" #Doesn't really matter innit? At least for a service behind NAT.
-ListeningPort = 8101
+# Config Zone
 
+I2CBus = 1 # Your I2C bus
+I2CAddress = 0x36 # Your I2C device address
+ListeningAddress = "" # Doesn't really matter innit? At least for a service behind NAT.
+ListeningPort = 8101 # Port you wanna to use
+HTMLPath = "dash.html" # Whatever HTML you want to use, be aware of those variables
+
+# Initialize payloads
 VisitCount = 0
+assets = {"voltage": 0.0000, "capacity": 0.0000, "temp": "",
+           "time": "", "uptime": "", "upsince": "", "header": "", "load": ""}
+# HTMLPayloads = """
+# """ # Dummy for now
 
-assets = {"voltage": 0.0000, "capacity": 0.0000, "temp": "", "time": "", "uptime": "", "upsince": "", "header": "", "load": ""}
-
-HTMLPayloads = """
-<!DOCTYPE html>
-<html lang="en">
-    <head>
-    <meta charset="utf-8">
-    <title>Raspberry Pi 3b at home.</title>
-    </head>
-    <body>
-    <h1>Some readings from my Raspberry Pi 3b and it's "UPS"</h1>
-    Prensented by <a href="https://front.the42.info">the42game</a> via <a href="https://gist.github.com/theskanthunt42/02de49d7190eb4a0a867d66c2e532e10">SimpUPSMon</a>
-    <hr>
-    <b>General Infomation</b>
-    <br>
-    The time is:
-    <br>
-    {timenow}
-    <br>
-    This Server has been up for: {uptime} 
-    <br>
-    Since {upsince}
-    <br>
-    BCM2837 SoC Temp: {temps}
-    <br>
-    Load Average: {LoadAvg}
-    <br>
-    <b>Current readings from the UPS:</b>
-    <br>
-    Battery Voltage: {volt}V
-    <br>
-    Battery Percentage: {percent}%
-    <br>
-    <b>Even more infomations from your side:</b>
-    <br>
-    "Backend" IP address is :{addr}:{port}
-    <br>
-    <b>YOUR</b> IP address is: <a href="https://ip.sb/ip/{RealAddr}">{RealAddr}</a>
-    <br>
-    You are connected from this Cloudflare CDN: {CfCDNIP}
-    <br>
-    Which should be located in: {CfCDNLOC}
-    <br>
-    Your headers: 
-    <br>
-    {header}
-    <br>
-    </body>
-    
-</html>
-"""
-
-
+def HTMLRead() -> str:
+    try:
+        with open(HTMLPath, 'r') as file:
+            HTMLData = file.read()
+    except FileNotFoundError:
+        print(f"{HTMLPath} was not found.")
+        raise SystemExit
+    except PermissionError:
+        print(f"You sure you can read this file? Check file permission of {HTMLPath}")
+        raise SystemExit
+    return HTMLData
 
 def VisitorsOfTheRun():
     # WIP
@@ -124,7 +90,7 @@ def SimpHTTPSend(client, address, assets):
     #CfIP = IncomingString.split("\r\n")[8].split(": ")[1]
     #CfCountry = IncomingString.split("\r\n")[9].split(": ")[1]
     print(f"Incoming traffic from{ProDict['Origin']}")
-    Response = HTMLPayloads.format(
+    Response = HTMLRead.format(
         LoadAvg = assets["load"], RealAddr = ProDict["Origin"], CfCDNIP = ProDict["CfIP"], CfCDNLOC = ProDict["CfCountry"], 
         addr = address[0], port = address[1], volt = assets["voltage"], percent = assets["capacity"], temps = assets["temp"], 
         timenow = assets["time"], uptime = assets["uptime"], upsince = assets["upsince"], header = IncomingData.decode()

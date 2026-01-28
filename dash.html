@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>Raspberry Pi 3b at home.</title>
+</head>
+
+<body>
+    <h1>Some readings from my Raspberry Pi 3b and it's "UPS"</h1>
+    Prensented by <a href="https://front.the42.info">the42game</a> via <a
+        href="https://gist.github.com/theskanthunt42/02de49d7190eb4a0a867d66c2e532e10">SimpUPSMon</a>
+    <hr>
+    <b>General Infomation</b>
+    <br>
+    The time is:
+    <br>
+    {timenow}
+    <br>
+    This Server has been up for: {uptime}
+    <br>
+    Since {upsince}
+    <br>
+    BCM2837 SoC Temp: {temps}
+    <br>
+    Load Average: {LoadAvg}
+    <br>
+    <b>Current readings from the UPS:</b>
+    <br>
+    Battery Voltage: {volt}V
+    <br>
+    Battery Percentage: {percent}%
+    <br>
+    <b>Even more infomations from your side:</b>
+    <br>
+    "Backend" IP address is :{addr}:{port}
+    <br>
+    <b>YOUR</b> IP address is: <a href="https://ip.sb/ip/{RealAddr}">{RealAddr}</a>
+    <br>
+    You are connected from this Cloudflare CDN: {CfCDNIP}
+    <br>
+    Which should be located in: {CfCDNLOC}
+    <br>
+    Your headers:
+    <br>
+    {header}
+    <br>
+</body>
+
+</html>
