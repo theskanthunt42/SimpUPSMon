@@ -146,8 +146,13 @@ def main(assets, VisitCount, LastUA, IPLast):
     while True:
         try:
             s.listen(4)
+            # OMG IDK BUT THIS SHOULD BE WHERE MULTI THREADING BEGINS.
+            # I don't think I need that now? Or does I understand the needs of "Multi-threading" badly.
+            # Maybe I don't need that anyway, just let s.listen(4) which enable 4 additional connections to wait till actually got accepted?
+            # Shit.
             client, address = s.accept()
             VisitCount, LastUA, IPLast = ServerStage(client, address, assets, bus, VisitCount, LastUA, IPLast)
+            
             client.close()
         except BrokenPipeError:
             client.close()
