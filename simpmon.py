@@ -84,22 +84,23 @@ def SimpHeaderRead(Data: bytes) -> dict:
             pass
     return ProDict
 
-def SimpHTTPSend(client, address, assets, VisitCount, LastUA, IPLast):
+def SimpHTTPSend(client, address, assets, VisitCount, LastUA, IPLast, RAM):
     IncomingData = client.recv(1024)
     ProDict = SimpHeaderRead(IncomingData)
     if ProDict["UA"] != LastUA and ProDict["Origin"] != IPLast and ProDict["Origin"] != "":
         VisitCount = VisitCount + 1
-        print("Unique.")
-        print(f"{ProDict['Origin']} comp {IPLast}")
     print(f"Incoming traffic from {ProDict['Origin']} via {address[0]}:{address[1]}")
     Response = HTMLRead()
     try:
         Response = Response.format(
-        LoadAvg = assets["load"], RealAddr = ProDict["Origin"], CfCDNIP = ProDict["CfIP"], CfCDNLOC = ProDict["CfCountry"], 
+        LoadAvg = assets["load"], 
+        RealAddr = ProDict["Origin"], CfCDNIP = ProDict["CfIP"], CfCDNLOC = ProDict["CfCountry"], 
         addr = address[0], port = address[1], volt = assets["voltage"], percent = assets["capacity"], temps = assets["temp"], 
-        timenow = assets["time"], uptime = assets["uptime"], upsince = assets["upsince"], header = IncomingData.decode(), visit = VisitCount
+        timenow = assets["time"], uptime = assets["uptime"], upsince = assets["upsince"], header = IncomingData.decode(), visit = VisitCount,
+        ramusd = RAM["UsdRAM"], ramttl = RAM["TtlRAM"], swpusd = RAM["UsdSWAP"], swpttl = RAM["TtlSWAP"]
         )
     except KeyError:
+        # Debug point of ref. if key got wrong.
         pass
     try:
         client.send(b"HTTP/1.0 200 OK\r\nContent-Type: text/html\r\n\r\n")
@@ -131,9 +132,30 @@ def HardReadingOperations(bus) -> dict:
 
 def ServerStage(client, address, assets, bus, VisitCount, LastUA, IPLast):
     assets = HardReadingOperations(bus)
-    VisitCount, LastUA, IPLast = SimpHTTPSend(client, address, assets, VisitCount, LastUA, IPLast)
+    RAM = RAMUse()
+    VisitCount, LastUA, IPLast = SimpHTTPSend(client, address, assets, VisitCount, LastUA, IPLast, RAM)
     client.close()
     return VisitCount, LastUA, IPLast
+
+def RAMUse() -> dict:
+    RAMInfo = {"TtlRAM": "", "UsdRAM": "", "TtlSWAP": "", "UsdSWAP": ""}
+    FreeRaw = os.popen("free -m").read().split("\n")
+    MemRaw = FreeRaw[1].split(" ")
+    SwapRaw = FreeRaw[2].split(" ")
+    TempList = []
+    for i in MemRaw[1:]:
+        if i != "":
+            TempList.append(i)
+    RAMInfo["TtlRAM"] = TempList[0]
+    RAMInfo["UsdRAM"] = TempList[1]
+    TempList.clear()
+    for i in SwapRaw[1:]:
+        if i != "":
+            TempList.append(i)
+    RAMInfo["TtlSWAP"] = TempList[0]
+    RAMInfo["UsdSWAP"] = TempList[1]
+    return RAMInfo
+
 
 def main(assets, VisitCount, LastUA, IPLast):
     bus = smbus.SMBus(I2CBus)
