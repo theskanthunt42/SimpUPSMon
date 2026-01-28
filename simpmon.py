@@ -1,10 +1,10 @@
-import smbus # pyright: ignore[reportMissingImports]
+import smbus # pyright: ignore[reportMissingImports] # Like... I don't have this on my Mac...
 import struct
 import socket
 import os
 import threading
 
-# Config Zone
+# Configs
 
 I2CBus = 1 # Your I2C bus
 I2CAddress = 0x36 # Your I2C device address
@@ -21,9 +21,6 @@ def InitializePayload() -> tuple:
     IPLast = ""
     return assets, VisitCount, LastUA, IPLast
 
-# HTMLPayloads = """
-# """ # Dummy for now
-
 def HTMLRead() -> str:
     try:
         with open(HTMLPath, 'r') as file:
@@ -35,11 +32,6 @@ def HTMLRead() -> str:
         print(f"You sure you can read this file? Check file permission of {HTMLPath}")
         raise SystemExit
     return HTMLData
-
-#def VisitorsOfTheRun(ProDict, LastRay, VisCount):
-#    if ProDict["CfRayID"] is not LastRay:
-#        VisitCount = VisCount + 1
-#    return VisitCount
 
 def I2CRead(bus, i2caddr, addr) -> int:
     try:
@@ -94,18 +86,11 @@ def SimpHeaderRead(Data: bytes) -> dict:
 
 def SimpHTTPSend(client, address, assets, VisitCount, LastUA, IPLast):
     IncomingData = client.recv(1024)
-    #print(f"Incoming connection from: {address}")
-    #print(f"With header of {IncomingData}")# For debug and for fun, seems to be causing trouble
     ProDict = SimpHeaderRead(IncomingData)
-    #visitors = VisitorsOfTheRun(ProDict, CfRayLast, VisitCount)
     if ProDict["UA"] != LastUA and ProDict["Origin"] != IPLast and ProDict["Origin"] != "":
         VisitCount = VisitCount + 1
         print("Unique.")
         print(f"{ProDict['Origin']} comp {IPLast}")
-    #RealIP = IncomingString.split("\r\n")[-5].split(": ")[1]
-    #CfIP = IncomingString.split("\r\n")[8].split(": ")[1]
-    #CfCountry = IncomingString.split("\r\n")[9].split(": ")[1]
-    # print(f"{address}")
     print(f"Incoming traffic from {ProDict['Origin']} via {address[0]}:{address[1]}")
     Response = HTMLRead()
     try:
@@ -122,8 +107,6 @@ def SimpHTTPSend(client, address, assets, VisitCount, LastUA, IPLast):
     except socket.timeout or BrokenPipeError or ConnectionAbortedError as error:
         print(f"{error} when sending to {address[0]}:{address[1]}, skipped.")
     IPLast = ProDict["Origin"]
-    #client.sendall(b"<html>Hello.</html>")
-    #print("Data sent.")
     return VisitCount, LastUA, IPLast
     
 
@@ -165,10 +148,6 @@ def main(assets, VisitCount, LastUA, IPLast):
             s.listen(4)
             client, address = s.accept()
             VisitCount, LastUA, IPLast = ServerStage(client, address, assets, bus, VisitCount, LastUA, IPLast)
-            # thread = threading.Thread(target=ServerStage, args=(client, address, assets, bus, VisitCount, LastUA, IPLast))
-            # thread.start()
-            #thread.join()
-            # VisitCount, LastUA, IPLast = thread.
             client.close()
         except BrokenPipeError:
             client.close()
@@ -181,8 +160,6 @@ def main(assets, VisitCount, LastUA, IPLast):
             client.close()
             print("Interrupt by user.")
             break
-
-
 
 if __name__ == "__main__":
     assets, VisitCount, LastUA, IPLast = InitializePayload()
