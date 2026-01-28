@@ -102,11 +102,14 @@ def SimpHTTPSend(client, address, assets, VisitCount, LastUA, IPLast):
     # print(f"{address}")
     print(f"Incoming traffic from {ProDict['Origin']} via {address[0]}:{address[1]}")
     Response = HTMLRead()
-    Response = Response.format(
+    try:
+        Response = Response.format(
         LoadAvg = assets["load"], RealAddr = ProDict["Origin"], CfCDNIP = ProDict["CfIP"], CfCDNLOC = ProDict["CfCountry"], 
         addr = address[0], port = address[1], volt = assets["voltage"], percent = assets["capacity"], temps = assets["temp"], 
         timenow = assets["time"], uptime = assets["uptime"], upsince = assets["upsince"], header = IncomingData.decode(), visit = VisitCount
-    )
+        )
+    except KeyError:
+        pass
     client.send(b"HTTP/1.0 200 OK\r\nContent-Type: text/html\r\n\r\n")
     client.sendall(bytes(Response.encode("utf-8")))
     IPLast = ProDict["Origin"]
