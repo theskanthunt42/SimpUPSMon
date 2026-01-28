@@ -89,8 +89,10 @@ def SimpHTTPSend(client, address, assets):
     #RealIP = IncomingString.split("\r\n")[-5].split(": ")[1]
     #CfIP = IncomingString.split("\r\n")[8].split(": ")[1]
     #CfCountry = IncomingString.split("\r\n")[9].split(": ")[1]
-    print(f"Incoming traffic from{ProDict['Origin']}")
-    Response = HTMLRead.format(
+    # print(f"{address}")
+    print(f"Incoming traffic from {ProDict['Origin']} via {address[0]}:{address[1]}")
+    Response = HTMLRead()
+    Response = Response.format(
         LoadAvg = assets["load"], RealAddr = ProDict["Origin"], CfCDNIP = ProDict["CfIP"], CfCDNLOC = ProDict["CfCountry"], 
         addr = address[0], port = address[1], volt = assets["voltage"], percent = assets["capacity"], temps = assets["temp"], 
         timenow = assets["time"], uptime = assets["uptime"], upsince = assets["upsince"], header = IncomingData.decode()

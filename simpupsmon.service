@@ -1,0 +1,23 @@
+[Unit]
+Description=Running SimpUPSMon as daemon
+After=network.target, syslog.target
+Wants = network.target
+
+[Service]
+Type=simple
+
+# Working directory
+WorkingDirectory=/CWD/HERE
+
+# Command to execute when the service is started
+ExecStart=/usr/bin/python3 /PATH/TO/FILE
+
+# Automatically restart the service if it crashes
+Restart=on-failure
+
+# Debugging stuff
+StandardOutput=syslog
+StandardError=syslog
+
+[Install]
+WantedBy=multi-user.target
