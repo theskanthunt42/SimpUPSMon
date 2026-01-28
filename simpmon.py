@@ -2,6 +2,7 @@ import smbus # pyright: ignore[reportMissingImports]
 import struct
 import socket
 import os
+import threading
 
 # Config Zone
 
@@ -12,8 +13,13 @@ ListeningPort = 8101 # Port you wanna to use
 HTMLPath = "dash.html" # Whatever HTML you want to use, be aware of those variables
 
 # Initialize payloads
-assets = {"voltage": 0.0000, "capacity": 0.0000, "temp": "",
+def InitializePayload() -> tuple:
+    assets = {"voltage": 0.0000, "capacity": 0.0000, "temp": "",
            "time": "", "uptime": "", "upsince": "", "header": "", "load": ""}
+    VisitCount = 0
+    LastUA = ""
+    IPLast = ""
+    return assets, VisitCount, LastUA, IPLast
 
 # HTMLPayloads = """
 # """ # Dummy for now
@@ -110,8 +116,11 @@ def SimpHTTPSend(client, address, assets, VisitCount, LastUA, IPLast):
         )
     except KeyError:
         pass
-    client.send(b"HTTP/1.0 200 OK\r\nContent-Type: text/html\r\n\r\n")
-    client.sendall(bytes(Response.encode("utf-8")))
+    try:
+        client.send(b"HTTP/1.0 200 OK\r\nContent-Type: text/html\r\n\r\n")
+        client.send(bytes(Response.encode("utf-8")))
+    except socket.timeout or BrokenPipeError or ConnectionAbortedError as error:
+        print(f"{error} when sending to {address[0]}:{address[1]}, skipped.")
     IPLast = ProDict["Origin"]
     #client.sendall(b"<html>Hello.</html>")
     #print("Data sent.")
@@ -137,12 +146,14 @@ def HardReadingOperations(bus) -> dict:
     assets["upsince"], assets["uptime"], assets["time"], assets["load"] = TimeRelated()
     return assets
 
+def ServerStage(client, address, assets, bus, VisitCount, LastUA, IPLast):
+    assets = HardReadingOperations(bus)
+    VisitCount, LastUA, IPLast = SimpHTTPSend(client, address, assets, VisitCount, LastUA, IPLast)
+    client.close()
+    return VisitCount, LastUA, IPLast
 
-def main():
+def main(assets, VisitCount, LastUA, IPLast):
     bus = smbus.SMBus(I2CBus)
-    VisitCount = 1
-    LastUA = ""
-    IPLast = ""
     try:
         s = socket.socket()
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -153,19 +164,27 @@ def main():
         try:
             s.listen(4)
             client, address = s.accept()
-            assets = HardReadingOperations(bus)
-            VisitCount, LastUA, IPLast = SimpHTTPSend(client, address, assets, VisitCount, LastUA, IPLast)
+            VisitCount, LastUA, IPLast = ServerStage(client, address, assets, bus, VisitCount, LastUA, IPLast)
+            # thread = threading.Thread(target=ServerStage, args=(client, address, assets, bus, VisitCount, LastUA, IPLast))
+            # thread.start()
+            #thread.join()
+            # VisitCount, LastUA, IPLast = thread.
             client.close()
+        except BrokenPipeError:
+            client.close()
+            print(f"Broken pipe to {IPLast} via {address}.")
+            pass
         except OSError as error:
             client.close()
             raise error
         except KeyboardInterrupt:
             client.close()
             print("Interrupt by user.")
-            raise KeyboardInterrupt
+            break
 
 
 
 if __name__ == "__main__":
-    main()
+    assets, VisitCount, LastUA, IPLast = InitializePayload()
+    main(assets, VisitCount, LastUA, IPLast)
 
