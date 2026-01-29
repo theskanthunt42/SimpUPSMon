@@ -2,15 +2,16 @@ import smbus # pyright: ignore[reportMissingImports] # Like... I don't have this
 import struct
 import socket
 import os
-import threading
+import requests
 
 # Configs
-
 I2CBus = 1 # Your I2C bus
 I2CAddress = 0x36 # Your I2C device address
 ListeningAddress = "" # Doesn't really matter innit? At least for a service behind NAT.
 ListeningPort = 8101 # Port you wanna to use
 HTMLPath = "dash.html" # Whatever HTML you want to use, be aware of those variables
+TokenPath = "token.txt" # Your fricking HA "Bearer" token, one line
+HAAddress = "http://homeassitant.local:8123/" # I have no idea why... by default... they use this
 
 # Initialize payloads
 def InitializePayload() -> tuple:
@@ -21,17 +22,17 @@ def InitializePayload() -> tuple:
     IPLast = ""
     return assets, VisitCount, LastUA, IPLast
 
-def HTMLRead() -> str:
+def FileRead(path: str) -> str:
     try:
-        with open(HTMLPath, 'r') as file:
-            HTMLData = file.read()
+        with open(path, 'r') as file:
+            Data = file.read()
     except FileNotFoundError:
-        print(f"{HTMLPath} was not found.")
+        print(f"{path} was not found.")
         raise SystemExit
     except PermissionError:
-        print(f"You sure you can read this file? Check file permission of {HTMLPath}")
+        print(f"You sure you can read this file? Check file permission of {path}")
         raise SystemExit
-    return HTMLData
+    return Data
 
 def I2CRead(bus, i2caddr, addr) -> int:
     try:
@@ -90,7 +91,7 @@ def SimpHTTPSend(client, address, assets, VisitCount, LastUA, IPLast, RAM):
     if ProDict["UA"] != LastUA and ProDict["Origin"] != IPLast and ProDict["Origin"] != "":
         VisitCount = VisitCount + 1
     print(f"Incoming traffic from {ProDict['Origin']} via {address[0]}:{address[1]}")
-    Response = HTMLRead()
+    Response = FileRead(HTMLPath)
     try:
         Response = Response.format(
         LoadAvg = assets["load"], 
@@ -155,6 +156,13 @@ def RAMUse() -> dict:
     RAMInfo["TtlSWAP"] = TempList[0]
     RAMInfo["UsdSWAP"] = TempList[1]
     return RAMInfo
+
+def OutDoorTemp():
+    token = FileRead(TokenPath)
+    # HA TEMP READ
+    # THIS PROJECT IS PURE SHIT
+    # WHO WROTE THIS PIECE OF CRAP???
+    # https://developers.home-assistant.io/docs/api/rest/
 
 
 def main(assets, VisitCount, LastUA, IPLast):
