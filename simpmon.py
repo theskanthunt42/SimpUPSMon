@@ -157,12 +157,17 @@ def RAMUse() -> dict:
     RAMInfo["UsdSWAP"] = TempList[1]
     return RAMInfo
 
-def OutDoorTemp():
-    token = FileRead(TokenPath)
-    # HA TEMP READ
-    # THIS PROJECT IS PURE SHIT
-    # WHO WROTE THIS PIECE OF CRAP???
-    # https://developers.home-assistant.io/docs/api/rest/
+# Ended up uninstalling HA... so no outside temp for now.
+
+def SatImgRead(path: str):# Input path to imagerys' directory and to read the latest or even gif for the past 24hr???
+    # Placeholder for future GK-2A Korean weather satellite imagery functions.
+    # It depends on how well my setup gone and after I get to know how to use SatDump.
+    # I dunno... maybe some how a solar panel on top for LNA power or PoE in a box?
+    # Maybe a SATV+DTV splitter would work? or I mod my current TV ANT's LNA to pull 12V out and down it to 5V and then
+    # HOME -> (ROOF) DTV LNA w/POWER PULL MOD +-> MIXER +--> DTV ANT
+    #                                         +--5V-->--+--> BPF -> LNA -> GRID DISH FOR SAT
+    # I dunno... still
+    return None #Prob. path to latest imagery
 
 
 def main(assets, VisitCount, LastUA, IPLast):
