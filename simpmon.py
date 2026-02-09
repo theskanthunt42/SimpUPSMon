@@ -2,7 +2,7 @@ import smbus # pyright: ignore[reportMissingImports] # Like... I don't have this
 import struct
 import socket
 import os
-import requests
+#import requests
 
 # Configs
 I2CBus = 1 # Your I2C bus
@@ -121,7 +121,8 @@ def TimeRelated() -> tuple[str, str, str, str]:
     UPTimeSince = os.popen("uptime -s").read().split("\n")[0]
     UPTimeFor = os.popen("uptime -p").read().split("\n")[0][3:]
     LocalTimeTup = os.popen("date").read().split("\n")[0].split(" ")
-    LocalTime = f"{LocalTimeTup[0]} {LocalTimeTup[1]}, {LocalTimeTup[2]} {LocalTimeTup[5]} {LocalTimeTup[3]} (UTC{LocalTimeTup[4]})"
+    #LocalTime = f"{LocalTimeTup[0]} {LocalTimeTup[1]}, {LocalTimeTup[2]} {LocalTimeTup[5]} {LocalTimeTup[3]} (UTC{LocalTimeTup[4]})"
+    LocalTime = str(os.popen("date").read())
     return UPTimeSince, UPTimeFor, LocalTime, LoadAverage
 
 def HardReadingOperations(bus) -> dict:
