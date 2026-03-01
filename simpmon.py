@@ -2,6 +2,7 @@ import smbus # pyright: ignore[reportMissingImports] # Like... I don't have this
 import struct
 import socket
 import os
+#import subprocess
 #import requests
 
 # Configs
@@ -109,11 +110,13 @@ def SimpHTTPSend(client, address, assets, VisitCount, LastUA, IPLast, RAM):
     except socket.timeout or BrokenPipeError or ConnectionAbortedError as error:
         print(f"{error} when sending to {address[0]}:{address[1]}, skipped.")
     IPLast = ProDict["Origin"]
+    LastUA = ProDict["UA"]
     return VisitCount, LastUA, IPLast
     
 
 def VCTempRead() -> str:
     VCTemp = os.popen("vcgencmd measure_temp").read().split("=")[1].split("\n")[0]
+    #VCTemp = subprocess.Popen(["/usr/bin/vcgencmd", "measure_temp"]).
     return VCTemp
 
 def TimeRelated() -> tuple[str, str, str, str]:
